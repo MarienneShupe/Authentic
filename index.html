@@ -3,18 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Image PDF Generator</title>
+    <title>Interactive X Post PDF Generator</title>
     <style>
         body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: Arial, sans-serif; background-color: #f0f0f0; }
-        #canvas { max-width: 300px; margin: 20px; border: 1px solid #ccc; cursor: text; }
+        #container { position: relative; max-width: 300px; margin: 20px; }
+        #canvas { max-width: 300px; border: 1px solid #ccc; }
+        #textInput { position: absolute; display: none; font-size: 16px; padding: 2px; border: 1px solid #000; background: rgba(255, 255, 255, 0.8); }
         button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin: 10px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; }
         button:hover { background-color: #45a049; }
         #instructions { font-size: 18px; text-align: center; max-width: 600px; }
     </style>
 </head>
 <body>
-    <div id="instructions">Click the canvas to type, then download as PDF!</div>
-    <canvas id="canvas"></canvas>
+    <div id="instructions">Click the image to add text, type, then download PDF to share on X!</div>
+    <div id="container">
+        <canvas id="canvas"></canvas>
+        <input type="text" id="textInput">
+    </div>
     <button id="createButton">Download PDF</button>
 
     <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
@@ -22,9 +27,11 @@
         const { jsPDF } = window.jspdf;
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
+        const container = document.getElementById('container');
+        const textInput = document.getElementById('textInput');
         const createButton = document.getElementById('createButton');
 
-        // Default canvas setup (in case image fails)
+        // Canvas setup
         canvas.width = 300;
         canvas.height = 400;
         let userText = '';
@@ -32,9 +39,9 @@
         let textY = 100;
         let imageLoaded = false;
 
-        // Load the image
+        // Load image
         const img = new Image();
-        img.src = 'background.png'; // Replace with your image path or URL
+        img.src = 'background.png'; // Replace with your X post image URL or local file
 
         img.onload = () => {
             console.log('Image loaded');
@@ -43,15 +50,15 @@
             const ratio = maxWidth / img.width;
             canvas.width = img.width * ratio;
             canvas.height = img.height * ratio;
+            textInput.style.width = `${canvas.width - 20}px`; // Fit input to canvas width
             drawCanvas();
         };
 
         img.onerror = () => {
-            console.log('Image failed to load, using fallback');
-            drawCanvas(); // Draw fallback even if image fails
+            console.log('Image failed to load');
+            drawCanvas(); // Fallback drawing
         };
 
-        // Draw initial canvas (with or without image)
         function drawCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (imageLoaded) {
@@ -63,37 +70,43 @@
                 ctx.font = '16px Arial';
                 ctx.fillText('No image loaded', 10, 20);
             }
-            ctx.fillStyle = '#000';
-            ctx.font = '16px Arial';
-            ctx.fillText(userText, textX, textY);
+            if (userText) {
+                ctx.fillStyle = '#000';
+                ctx.font = '16px Arial';
+                ctx.fillText(userText, textX, textY);
+            }
         }
 
         // Initial draw
         drawCanvas();
 
-        // Click to set text position
+        // Click to position text input
         canvas.addEventListener('click', (e) => {
             const rect = canvas.getBoundingClientRect();
             textX = e.clientX - rect.left;
             textY = e.clientY - rect.top;
-            console.log('Clicked at:', textX, textY);
-            drawCanvas();
+            textInput.style.left = `${textX}px`;
+            textInput.style.top = `${textY - 20}px`; // Offset above click
+            textInput.style.display = 'block';
+            textInput.focus();
+            console.log('Input positioned at:', textX, textY);
         });
 
-        // Typing
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace') {
-                userText = userText.slice(0, -1);
-            } else if (e.key.length === 1) {
-                userText += e.key;
-            }
-            console.log('Text:', userText);
+        // Update text on input
+        textInput.addEventListener('input', (e) => {
+            userText = e.target.value;
             drawCanvas();
+            console.log('Text updated:', userText);
         });
 
-        // PDF generation
+        // Hide input on blur (optional, keeps it clean)
+        textInput.addEventListener('blur', () => {
+            textInput.style.display = 'none';
+        });
+
+        // Generate PDF
         function generatePDF() {
-            console.log('Button clicked, generating PDF');
+            console.log('Generating PDF with text:', userText);
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'px',
@@ -110,8 +123,8 @@
 
             const imgData = canvas.toDataURL('image/png');
             pdf.addImage(imgData, 'PNG', xOffset, yOffset, scaledWidth, scaledHeight);
-            pdf.save('edited_image.pdf');
-            console.log('PDF should be downloaded');
+            pdf.save('x_post_response.pdf');
+            console.log('PDF saved');
         }
 
         createButton.addEventListener('click', generatePDF);
