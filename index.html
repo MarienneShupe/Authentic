@@ -17,8 +17,10 @@
     <img id="preview" src="background.png" alt="Preview Image">
     <button id="createButton">Create Fillable PDF</button>
 
-    <script src="https://unpkg.com/jspdf@1.5.3/dist/jspdf.min.js"></script>
+    <!-- Use the latest jsPDF version with autofield support -->
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
     <script>
+        const { jsPDF } = window.jspdf; // Access jsPDF from the UMD module
         const preview = document.getElementById('preview');
         const createButton = document.getElementById('createButton');
 
@@ -46,25 +48,29 @@
 
                 pdf.addImage(img, 'PNG', xOffset, yOffset, scaledWidth, scaledHeight);
 
-                // Add fillable field below image
+                // Add fillable text field below image
                 pdf.setFontSize(12);
                 pdf.text('Type here:', 10, scaledHeight + yOffset + 20);
-                const textField = new jsPDF.AcroFormTextField();
-                textField.Rect = [70, scaledHeight + yOffset + 10, 200, 20];
-                textField.T = 'userResponse';
-                textField.V = '';
-                pdf.addField(textField);
+                pdf.acroform.addField(
+                    new pdf.acroform.TextField({
+                        Rect: [70, scaledHeight + yOffset + 10, 200, 20], // [x, y, width, height]
+                        N: 'userResponse', // Field name
+                        V: '', // Default value
+                    })
+                );
 
                 pdf.save('fillable_pdf.pdf');
             };
             img.onerror = () => {
                 console.error('Image load failed');
                 pdf.text('Image not found. Type here:', 10, 700);
-                const textField = new jsPDF.AcroFormTextField();
-                textField.Rect = [70, 690, 200, 20];
-                textField.T = 'userResponse';
-                textField.V = '';
-                pdf.addField(textField);
+                pdf.acroform.addField(
+                    new pdf.acroform.TextField({
+                        Rect: [70, 690, 200, 20],
+                        N: 'userResponse',
+                        V: '',
+                    })
+                );
                 pdf.save('fillable_pdf.pdf');
             };
         }
@@ -74,6 +80,7 @@
     </script>
 </body>
 </html>
+
 
 
 
