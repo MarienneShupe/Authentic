@@ -26,14 +26,14 @@
 
         // Load the image
         const img = new Image();
-        img.src = 'background.png'; // Your 1080x1920 image
+        img.src = 'background.png'; // Replace with your image path or URL
         let userText = '';
-        let textX = 50; // Default X position for text
-        let textY = 100; // Default Y position for text
+        let textX = 50;
+        let textY = 100;
 
         img.onload = () => {
-            // Set canvas size to match scaled image
-            const maxWidth = 300; // Match CSS max-width
+            console.log('Image loaded successfully');
+            const maxWidth = 300;
             const ratio = maxWidth / img.width;
             canvas.width = img.width * ratio;
             canvas.height = img.height * ratio;
@@ -41,7 +41,7 @@
         };
 
         img.onerror = () => {
-            console.error('Image load failed');
+            console.error('Image failed to load');
             canvas.width = 300;
             canvas.height = 400;
             ctx.fillStyle = '#fff';
@@ -49,23 +49,62 @@
             ctx.fillStyle = '#000';
             ctx.font = '16px Arial';
             ctx.fillText('Image not found', 10, 50);
+            drawCanvas();
         };
 
         function drawCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#000'; // Text color
-            ctx.font = '16px Arial'; // Adjust font size as needed
+            ctx.fillStyle = '#000';
+            ctx.font = '16px Arial';
             ctx.fillText(userText, textX, textY);
         }
 
-        // Handle clicking to set text position
         canvas.addEventListener('click', (e) => {
             const rect = canvas.getBoundingClientRect();
             textX = e.clientX - rect.left;
             textY = e.clientY - rect.top;
+            console.log('Text position set to:', textX, textY);
             drawCanvas();
-        });​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace') {
+                userText = userText.slice(0, -1);
+            } else if (e.key.length === 1) {
+                userText += e.key;
+            }
+            console.log('Current text:', userText);
+            drawCanvas();
+        });
+
+        function generatePDF() {
+            console.log('Generating PDF...');
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'px',
+                format: [595, 842]
+            });
+
+            const pdfWidth = 595;
+            const pdfHeight = 842;
+            const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
+            const scaledWidth = canvas.width * ratio;
+            const scaledHeight = canvas.height * ratio;
+            const xOffset = (pdfWidth - scaledWidth) / 2;
+            const yOffset = (pdfHeight - scaledHeight) / 2;
+
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', xOffset, yOffset, scaledWidth, scaledHeight);
+            pdf.save('edited_image.pdf');
+            console.log('PDF saved');
+        }
+
+        createButton.addEventListener('click', generatePDF);
+    </script>
+</body>
+</html>
+
 
 
 
