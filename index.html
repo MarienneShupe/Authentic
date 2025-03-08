@@ -13,37 +13,49 @@
     </style>
 </head>
 <body>
-    <div id="instructions">Click the image or button to download a fillable PDF. Open it, type, and screenshot!</div>
-    <img id="preview" src="background.png" alt="Click to Create PDF">
+    <div id="instructions">Click the button to download a fillable PDF!</div>
+    <img id="preview" src="background.png" alt="Preview Image">
     <button id="createButton">Create Fillable PDF</button>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- jsPDF with acroform support -->
+    <script src="https://unpkg.com/jspdf@1.5.3/dist/jspdf.min.js"></script>
     <script>
-        const { jsPDF } = window.jspdf;
         const preview = document.getElementById('preview');
         const createButton = document.getElementById('createButton');
-        const imageData = 'background.png'; // A4-sized image (595x842 px)
 
         function generatePDF() {
+            console.log('Generating PDF...'); // Debug log
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'px',
-                format: [595, 842] // A4 in pixels
+                format: [595, 842] // A4 size
             });
 
+            // Add background image
             const img = new Image();
-            img.src = imageData;
+            img.src = 'background.png';
             img.onload = () => {
-                pdf.addImage(imageData, 'PNG', 0, 0, 595, 842); // Fits A4 exactly
+                pdf.addImage(img, 'PNG', 0, 0, 595, 842); // Fit A4
+
+                // Add fillable text field
                 pdf.setFontSize(12);
-                pdf.text('Type here:', 10, 700); // Label higher up
-                pdf.acroform.addField({
-                    AS: 'userResponse', // Annotation subtype
-                    T: 'userResponse',  // Field name
-                    Rect: [70, 690, 200, 20], // Position: x, y, width, height
-                    V: '', // Default value (empty)
-                    F: 4 // Flags: 4 means visible
-                });
+                pdf.text('Type here:', 10, 700);
+                const textField = new jsPDF.AcroFormTextField();
+                textField.Rect = [70, 690, 200, 20]; // x, y, width, height
+                textField.T = 'userResponse'; // Field name
+                textField.V = ''; // Default value
+                pdf.addField(textField);
+
+                pdf.save('fillable_a4.pdf');
+            };
+            img.onerror = () => {
+                console.error('Image load failed');
+                pdf.text('Image not found. Type here:', 10, 700);
+                const textField = new jsPDF.AcroFormTextField();
+                textField.Rect = [70, 690, 200, 20];
+                textField.T = 'userResponse';
+                textField.V = '';
+                pdf.addField(textField);
                 pdf.save('fillable_a4.pdf');
             };
         }
@@ -53,4 +65,5 @@
     </script>
 </body>
 </html>
+
 
