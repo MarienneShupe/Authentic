@@ -3,47 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image to Fillable PDF</title>
+    <title>A4 Fillable PDF</title>
     <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-        }
-        #preview {
-            max-width: 300px;
-            margin: 20px;
-            cursor: pointer;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            margin: 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        #instructions {
-            font-size: 18px;
-            text-align: center;
-            max-width: 600px;
-        }
+        body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: Arial, sans-serif; background-color: #f0f0f0; }
+        #preview { max-width: 300px; margin: 20px; cursor: pointer; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin: 10px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; }
+        button:hover { background-color: #45a049; }
+        #instructions { font-size: 18px; text-align: center; max-width: 600px; }
     </style>
 </head>
 <body>
-    <div id="instructions">
-        Click the image or button below to download a fillable PDF. Open it, click to type, and screenshot for the X post!
-    </div>
+    <div id="instructions">Click the image or button to download a fillable PDF. Open it, type, and screenshot!</div>
     <img id="preview" src="background.png" alt="Click to Create PDF">
     <button id="createButton">Create Fillable PDF</button>
 
@@ -52,53 +22,35 @@
         const { jsPDF } = window.jspdf;
         const preview = document.getElementById('preview');
         const createButton = document.getElementById('createButton');
-        const imageData = 'background.png'; // Pre-set 1080x1920 px image in your repo
+        const imageData = 'background.png'; // A4-sized image (595x842 px)
 
-        // Function to generate and download the PDF
         function generatePDF() {
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'px',
-                format: [595, 842] // A4 in pixels at 72 DPI
+                format: [595, 842] // A4 in pixels
             });
 
             const img = new Image();
             img.src = imageData;
             img.onload = () => {
-                const imgWidth = 1080; // Fixed width from your spec
-                const imgHeight = 1920; // Fixed height from your spec
-                const pdfWidth = 595; // A4 width in pixels
-                const pdfHeight = 842; // A4 height in pixels
-                const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-                const scaledWidth = imgWidth * ratio;
-                const scaledHeight = imgHeight * ratio;
-                const xOffset = (pdfWidth - scaledWidth) / 2; // Center horizontally
-                const yOffset = (pdfHeight - scaledHeight) / 2; // Center vertically
-
-                // Add the 1080x1920 image, scaled to fit A4
-                pdf.addImage(imageData, 'PNG', xOffset, yOffset, scaledWidth, scaledHeight);
-
-                // Add a fillable text field below the image
+                pdf.addImage(imageData, 'PNG', 0, 0, 595, 842); // Fits A4 exactly
                 pdf.setFontSize(12);
-                pdf.text('Type here:', xOffset + 10, yOffset + scaledHeight + 20);
+                pdf.text('Type here:', 10, 700); // Label higher up
                 pdf.acroform.addField({
-                    type: 'text',
-                    name: 'userResponse',
-                    x: xOffset + 60,
-                    y: yOffset + scaledHeight + 15,
-                    width: 200,
-                    height: 20,
-                    value: '' // Empty by default
+                    AS: 'userResponse', // Annotation subtype
+                    T: 'userResponse',  // Field name
+                    Rect: [70, 690, 200, 20], // Position: x, y, width, height
+                    V: '', // Default value (empty)
+                    F: 4 // Flags: 4 means visible
                 });
-
-                // Download the PDF
-                pdf.save('fillable_image.pdf');
+                pdf.save('fillable_a4.pdf');
             };
         }
 
-        // Trigger PDF creation on image or button click
         preview.addEventListener('click', generatePDF);
         createButton.addEventListener('click', generatePDF);
     </script>
 </body>
 </html>
+
