@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive X Post PDF Generator</title>
+    <title>Interactive X Post Response</title>
     <style>
         body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: Arial, sans-serif; background-color: #f0f0f0; }
         #container { position: relative; max-width: 300px; margin: 20px; }
-        #canvas { max-width: 300px; border: 1px solid #ccc; touch-action: none; } /* Prevent mobile scrolling issues */
+        #canvas { max-width: 300px; border: 1px solid #ccc; touch-action: none; }
         #textInput { position: absolute; display: none; font-size: 16px; padding: 4px; border: 1px solid #000; background: rgba(255, 255, 255, 0.9); z-index: 10; width: 80%; }
         button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin: 10px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; }
         button:hover { background-color: #45a049; }
@@ -15,28 +15,24 @@
     </style>
 </head>
 <body>
-    <div id="instructions">Click or tap the image to add text, type your reply, then download PDF to share on X!</div>
+    <div id="instructions">Tap the image to add responses to prompts, hit Return/Done to imprint, repeat, then finalize!</div>
     <div id="container">
         <canvas id="canvas"></canvas>
-        <input type="text" id="textInput" placeholder="Type here...">
+        <input type="text" id="textInput" placeholder="Type your response...">
     </div>
-    <button id="createButton">Download PDF</button>
+    <button id="finalizeButton">Tap here when you’re ready to screenshot and reply to @MarienneShupe</button>
 
-    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
     <script>
-        const { jsPDF } = window.jspdf;
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const container = document.getElementById('container');
         const textInput = document.getElementById('textInput');
-        const createButton = document.getElementById('createButton');
+        const finalizeButton = document.getElementById('finalizeButton');
 
         // Canvas setup
         canvas.width = 300;
         canvas.height = 400;
-        let userText = '';
-        let textX = 50;
-        let textY = 100;
+        let textEntries = []; // Array to store all text entries {x, y, text}
         let imageLoaded = false;
 
         // Load image
@@ -70,11 +66,12 @@
                 ctx.font = '16px Arial';
                 ctx.fillText('No image loaded', 10, 20);
             }
-            if (userText) {
-                ctx.fillStyle = '#000';
-                ctx.font = '16px Arial';
-                wrapText(ctx, userText, textX, textY, canvas.width - 20, 20);
-            }
+            // Draw all previous text entries
+            ctx.fillStyle = '#000';
+            ctx.font = '16px Arial';
+            textEntries.forEach(entry => {
+                wrapText(ctx, entry.text, entry.x, entry.y, canvas.width - 20, 20);
+            });
         }
 
         // Wrap text to fit canvas width
@@ -103,58 +100,50 @@
 
         // Position text input on click or touch
         function positionTextInput(e) {
-            e.preventDefault(); // Prevent default touch behavior
+            e.preventDefault();
             const rect = canvas.getBoundingClientRect();
             const clientX = e.clientX || (e.touches && e.touches[0].clientX);
             const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-            textX = clientX - rect.left;
-            textY = clientY - rect.top;
-            textInput.style.left = `${Math.min(textX, canvas.width - textInput.offsetWidth)}px`; // Keep within bounds
-            textInput.style.top = `${Math.max(textY - 20, 0)}px`; // Offset, prevent going off top
+            const textX = clientX - rect.left;
+            const textY = clientY - rect.top;
+            textInput.style.left = `${Math.min(textX, canvas.width - textInput.offsetWidth)}px`;
+            textInput.style.top = `${Math.max(textY - 20, 0)}px`;
             textInput.style.display = 'block';
+            textInput.value = ''; // Clear input for new response
             textInput.focus();
             console.log('Input positioned at:', textX, textY);
+            // Temporarily store position for submission
+            textInput.dataset.x = textX;
+            textInput.dataset.y = textY;
         }
 
         canvas.addEventListener('click', positionTextInput);
         canvas.addEventListener('touchstart', positionTextInput);
 
-        // Update text on input
-        textInput.addEventListener('input', (e) => {
-            userText = e.target.value;
-            drawCanvas();
-            console.log('Text updated:', userText);
+        // Imprint text on Enter/Return/Done
+        textInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === 'Return') {
+                const text = textInput.value.trim();
+                if (text) {
+                    textEntries.push({
+                        x: parseFloat(textInput.dataset.x),
+                        y: parseFloat(textInput.dataset.y),
+                        text: text
+                    });
+                    console.log('Text imprinted:', text, 'at', textInput.dataset.x, textInput.dataset.y);
+                    textInput.style.display = 'none'; // Hide input after submission
+                    drawCanvas(); // Redraw immediately
+                }
+            }
         });
 
-        // Optional: Hide input on blur
-        textInput.addEventListener('blur', () => {
-            textInput.style.display = 'none';
+        // Finalize button action
+        finalizeButton.addEventListener('click', () => {
+            textInput.style.display = 'none'; // Ensure input is hidden
+            drawCanvas(); // Final redraw
+            console.log('Canvas finalized with entries:', textEntries);
+            alert('Canvas is ready! Screenshot it and reply to @MarienneShupe on X!');
         });
-
-        // Generate PDF
-        function generatePDF() {
-            console.log('Generating PDF with text:', userText);
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'px',
-                format: [595, 842]
-            });
-
-            const pdfWidth = 595;
-            const pdfHeight = 842;
-            const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
-            const scaledWidth = canvas.width * ratio;
-            const scaledHeight = canvas.height * ratio;
-            const xOffset = (pdfWidth - scaledWidth) / 2;
-            const yOffset = (pdfHeight - scaledHeight) / 2;
-
-            const imgData = canvas.toDataURL('image/png');
-            pdf.addImage(imgData, 'PNG', xOffset, yOffset, scaledWidth, scaledHeight);
-            pdf.save('x_post_response.pdf');
-            console.log('PDF saved');
-        }
-
-        createButton.addEventListener('click', generatePDF);
     </script>
 </body>
 </html>
