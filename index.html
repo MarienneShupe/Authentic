@@ -3,83 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fillable PDF Generator</title>
+    <title>Interactive Image PDF Generator</title>
     <style>
         body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: Arial, sans-serif; background-color: #f0f0f0; }
-        #preview { max-width: 300px; margin: 20px; cursor: pointer; }
+        #canvas { max-width: 300px; margin: 20px; border: 1px solid #ccc; cursor: text; }
         button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin: 10px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; }
         button:hover { background-color: #45a049; }
         #instructions { font-size: 18px; text-align: center; max-width: 600px; }
     </style>
 </head>
 <body>
-    <div id="instructions">Click the button to download a fillable PDF!</div>
-    <img id="preview" src="background.png" alt="Preview Image">
-    <button id="createButton">Create Fillable PDF</button>
+    <div id="instructions">Click the image to type, then download as PDF!</div>
+    <canvas id="canvas"></canvas>
+    <button id="createButton">Download PDF</button>
 
-    <!-- Use the latest jsPDF version with autofield support -->
     <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
     <script>
-        const { jsPDF } = window.jspdf; // Access jsPDF from the UMD module
-        const preview = document.getElementById('preview');
+        const { jsPDF } = window.jspdf;
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
         const createButton = document.getElementById('createButton');
 
-        function generatePDF() {
-            console.log('Generating PDF...');
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'px',
-                format: [595, 842] // A4 size
-            });
+        // Load the image
+        const img = new Image();
+        img.src = 'background.png'; // Your 1080x1920 image
+        let userText = '';
+        let textX = 50; // Default X position for text
+        let textY = 100; // Default Y position for text
 
-            const img = new Image();
-            img.src = 'background.png'; // Your 1080x1920 px image
-            img.onload = () => {
-                // Scale 1080x1920 to fit A4 (595x842)
-                const imgWidth = 1080;
-                const imgHeight = 1920;
-                const pdfWidth = 595;
-                const pdfHeight = 842;
-                const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-                const scaledWidth = imgWidth * ratio;
-                const scaledHeight = imgHeight * ratio;
-                const xOffset = (pdfWidth - scaledWidth) / 2; // Center horizontally
-                const yOffset = (pdfHeight - scaledHeight) / 2; // Center vertically
+        img.onload = () => {
+            // Set canvas size to match scaled image
+            const maxWidth = 300; // Match CSS max-width
+            const ratio = maxWidth / img.width;
+            canvas.width = img.width * ratio;
+            canvas.height = img.height * ratio;
+            drawCanvas();
+        };
 
-                pdf.addImage(img, 'PNG', xOffset, yOffset, scaledWidth, scaledHeight);
+        img.onerror = () => {
+            console.error('Image load failed');
+            canvas.width = 300;
+            canvas.height = 400;
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#000';
+            ctx.font = '16px Arial';
+            ctx.fillText('Image not found', 10, 50);
+        };
 
-                // Add fillable text field below image
-                pdf.setFontSize(12);
-                pdf.text('Type here:', 10, scaledHeight + yOffset + 20);
-                pdf.acroform.addField(
-                    new pdf.acroform.TextField({
-                        Rect: [70, scaledHeight + yOffset + 10, 200, 20], // [x, y, width, height]
-                        N: 'userResponse', // Field name
-                        V: '', // Default value
-                    })
-                );
-
-                pdf.save('fillable_pdf.pdf');
-            };
-            img.onerror = () => {
-                console.error('Image load failed');
-                pdf.text('Image not found. Type here:', 10, 700);
-                pdf.acroform.addField(
-                    new pdf.acroform.TextField({
-                        Rect: [70, 690, 200, 20],
-                        N: 'userResponse',
-                        V: '',
-                    })
-                );
-                pdf.save('fillable_pdf.pdf');
-            };
+        function drawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#000'; // Text color
+            ctx.font = '16px Arial'; // Adjust font size as needed
+            ctx.fillText(userText, textX, textY);
         }
 
-        preview.addEventListener('click', generatePDF);
-        createButton.addEventListener('click', generatePDF);
-    </script>
-</body>
-</html>
+        // Handle clicking to set text position
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            textX = e.clientX - rect.left;
+            textY = e.clientY - rect.top;
+            drawCanvas();
+        });​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
+
 
 
 
