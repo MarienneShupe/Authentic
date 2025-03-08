@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A4 Fillable PDF</title>
+    <title>Fillable PDF Generator</title>
     <style>
         body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: Arial, sans-serif; background-color: #f0f0f0; }
         #preview { max-width: 300px; margin: 20px; cursor: pointer; }
@@ -17,36 +17,45 @@
     <img id="preview" src="background.png" alt="Preview Image">
     <button id="createButton">Create Fillable PDF</button>
 
-    <!-- jsPDF with acroform support -->
     <script src="https://unpkg.com/jspdf@1.5.3/dist/jspdf.min.js"></script>
     <script>
         const preview = document.getElementById('preview');
         const createButton = document.getElementById('createButton');
 
         function generatePDF() {
-            console.log('Generating PDF...'); // Debug log
+            console.log('Generating PDF...');
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'px',
                 format: [595, 842] // A4 size
             });
 
-            // Add background image
             const img = new Image();
-            img.src = 'background.png';
+            img.src = 'background.png'; // Your 1080x1920 px image
             img.onload = () => {
-                pdf.addImage(img, 'PNG', 0, 0, 595, 842); // Fit A4
+                // Scale 1080x1920 to fit A4 (595x842)
+                const imgWidth = 1080;
+                const imgHeight = 1920;
+                const pdfWidth = 595;
+                const pdfHeight = 842;
+                const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+                const scaledWidth = imgWidth * ratio;
+                const scaledHeight = imgHeight * ratio;
+                const xOffset = (pdfWidth - scaledWidth) / 2; // Center horizontally
+                const yOffset = (pdfHeight - scaledHeight) / 2; // Center vertically
 
-                // Add fillable text field
+                pdf.addImage(img, 'PNG', xOffset, yOffset, scaledWidth, scaledHeight);
+
+                // Add fillable field below image
                 pdf.setFontSize(12);
-                pdf.text('Type here:', 10, 700);
+                pdf.text('Type here:', 10, scaledHeight + yOffset + 20);
                 const textField = new jsPDF.AcroFormTextField();
-                textField.Rect = [70, 690, 200, 20]; // x, y, width, height
-                textField.T = 'userResponse'; // Field name
-                textField.V = ''; // Default value
+                textField.Rect = [70, scaledHeight + yOffset + 10, 200, 20];
+                textField.T = 'userResponse';
+                textField.V = '';
                 pdf.addField(textField);
 
-                pdf.save('fillable_a4.pdf');
+                pdf.save('fillable_pdf.pdf');
             };
             img.onerror = () => {
                 console.error('Image load failed');
@@ -56,7 +65,7 @@
                 textField.T = 'userResponse';
                 textField.V = '';
                 pdf.addField(textField);
-                pdf.save('fillable_a4.pdf');
+                pdf.save('fillable_pdf.pdf');
             };
         }
 
@@ -65,5 +74,6 @@
     </script>
 </body>
 </html>
+
 
 
