@@ -66,12 +66,15 @@
                 ctx.font = '16px Arial';
                 ctx.fillText('No image loaded', 10, 20);
             }
-            // Draw all previous text entries
             ctx.fillStyle = '#000';
-            ctx.font = '16px Arial';
+            ctx.font = '20px Arial'; // Bolder text for screenshots
             textEntries.forEach(entry => {
-                wrapText(ctx, entry.text, entry.x, entry.y, canvas.width - 20, 20);
+                wrapText(ctx, entry.text, entry.x, entry.y, canvas.width - 20, 24);
             });
+            // Add watermark
+            ctx.font = '12px Arial';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillText('@MarienneShupe #XPostChallenge', 10, canvas.height - 10);
         }
 
         // Wrap text to fit canvas width
@@ -147,3 +150,4 @@
     </script>
 </body>
 </html>
+
